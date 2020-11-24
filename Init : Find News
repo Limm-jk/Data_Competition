@@ -1,0 +1,305 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Find_News.ipynb",
+      "provenance": [],
+      "collapsed_sections": [],
+      "mount_file_id": "1NbexOq3RXBJS-BNXiCWVujsgzugWJn5s",
+      "authorship_tag": "ABX9TyPJktO5KLMkIBQjBNhJr/Ol",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Limm-jk/Data_Competition/blob/main/Init%20%3A%20Find%20News\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "-BAlCUZQ0AP1"
+      },
+      "source": [
+        "import pandas as pd # 데이터 전처리\n",
+        "import numpy as np # 데이터 전처리\n",
+        "import random #데이터 전처리\n",
+        "from pandas import DataFrame #데이터 전처리\n",
+        "from collections import Counter #데이터 전처리\n",
+        "\n",
+        "from tqdm import tqdm #시간 측정용\n",
+        "\n",
+        "from sklearn.feature_extraction.text import CountVectorizer # model setting\n",
+        "from sklearn.model_selection import train_test_split  # model setting\n",
+        "\n",
+        "from sklearn.naive_bayes import MultinomialNB  # model 관련\n",
+        "from sklearn.metrics import roc_auc_score  # model 성능 확인"
+      ],
+      "execution_count": 1,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 107
+        },
+        "id": "fS_LtW2I0lNd",
+        "outputId": "9fe5047c-719b-4e8f-dce0-03a0d1509960"
+      },
+      "source": [
+        "train = pd.read_csv(\"/content/drive/MyDrive/Colab Notebooks/Face_News/news_train.csv\")\n",
+        "\n",
+        "train.head(2)"
+      ],
+      "execution_count": 2,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "<div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>n_id</th>\n",
+              "      <th>date</th>\n",
+              "      <th>title</th>\n",
+              "      <th>content</th>\n",
+              "      <th>ord</th>\n",
+              "      <th>info</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>NEWS02580</td>\n",
+              "      <td>20200605</td>\n",
+              "      <td>[마감]코스닥 기관 678억 순매도</td>\n",
+              "      <td>[이데일리 MARKETPOINT]15:32 현재 코스닥 기관 678억 순매도</td>\n",
+              "      <td>1</td>\n",
+              "      <td>0</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>NEWS02580</td>\n",
+              "      <td>20200605</td>\n",
+              "      <td>[마감]코스닥 기관 678억 순매도</td>\n",
+              "      <td>\"실적기반\" 저가에 매집해야 할 8월 급등유망주 TOP 5 전격공개</td>\n",
+              "      <td>2</td>\n",
+              "      <td>1</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>"
+            ],
+            "text/plain": [
+              "        n_id      date  ... ord info\n",
+              "0  NEWS02580  20200605  ...   1    0\n",
+              "1  NEWS02580  20200605  ...   2    1\n",
+              "\n",
+              "[2 rows x 6 columns]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 2
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 107
+        },
+        "id": "3MBHvlKG0smD",
+        "outputId": "4340f428-d078-4fc1-aba8-c0ca7dc835e0"
+      },
+      "source": [
+        "test = pd.read_csv(\"/content/drive/MyDrive/Colab Notebooks/Face_News/news_test.csv\")\n",
+        "\n",
+        "test.head(2)"
+      ],
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "<div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>n_id</th>\n",
+              "      <th>date</th>\n",
+              "      <th>title</th>\n",
+              "      <th>content</th>\n",
+              "      <th>ord</th>\n",
+              "      <th>id</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>NEWS00237</td>\n",
+              "      <td>20200118</td>\n",
+              "      <td>[주목!e스몰캡]코세스, 마이크로LED 시장 개화 최대수혜 기대</td>\n",
+              "      <td>마이크로 LED TV 장비 양산 돌입- 전방업체 투자 확대로 본업도 호조연일 '신고가'</td>\n",
+              "      <td>1</td>\n",
+              "      <td>NEWS00237_1</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>NEWS00237</td>\n",
+              "      <td>20200118</td>\n",
+              "      <td>[주목!e스몰캡]코세스, 마이크로LED 시장 개화 최대수혜 기대</td>\n",
+              "      <td>[이데일리 김대웅 기자] 반도체 장비 업체 코세스(089890)의 기술력이 마이크로...</td>\n",
+              "      <td>2</td>\n",
+              "      <td>NEWS00237_2</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>"
+            ],
+            "text/plain": [
+              "        n_id      date  ... ord           id\n",
+              "0  NEWS00237  20200118  ...   1  NEWS00237_1\n",
+              "1  NEWS00237  20200118  ...   2  NEWS00237_2\n",
+              "\n",
+              "[2 rows x 6 columns]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 4
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 107
+        },
+        "id": "nHjIUMMe0xVk",
+        "outputId": "45cf9010-7df3-47f7-afb9-a2a2161ebd4f"
+      },
+      "source": [
+        "submission=pd.read_csv(\"/content/drive/MyDrive/Colab Notebooks/Face_News/sample_submission.csv\")\n",
+        "\n",
+        "submission.head(2)"
+      ],
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "<div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>id</th>\n",
+              "      <th>info</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>NEWS00237_1</td>\n",
+              "      <td>0</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>NEWS00237_2</td>\n",
+              "      <td>0</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>"
+            ],
+            "text/plain": [
+              "            id  info\n",
+              "0  NEWS00237_1     0\n",
+              "1  NEWS00237_2     0"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 5
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "KJlPpVXP06DU"
+      },
+      "source": [
+        ""
+      ],
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
