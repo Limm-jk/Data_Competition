@@ -1,0 +1,4 @@
+[submodule "Yolo v5"]
+	path = Yolo v5
+	url = https://github.com/Limm-jk/yolov5.git
+	branch = master
